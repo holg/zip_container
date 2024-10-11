@@ -1,0 +1,57 @@
+[package]
+name = "zip_container"
+version = "0.1.0"
+edition = "2021"
+authors = ["Holger Trahe <trahe@mac.com>"]
+documentation = "https://docs.rs/zip_container/"
+description = "Python Module of the ZipContainer  parser and writer for Rust"
+repository = "https://github.com/holg/zip_container"
+homepage = "https://github.com/holg/zip_container"
+license = "GPL-3.0-or-later"
+[lib]
+# Defines the library for the Rust package
+name = "zip_container"
+crate-type = ["lib", "cdylib"]
+path = "src/lib.rs"
+
+[[example]]
+name = "usage_example"
+required-features = ["native-runtime"]
+
+
+
+[features]
+default = ["native-runtime"]
+native-runtime = ["tokio", "reqwest/native-tls"]
+python = ["pyo3", "tokio", "reqwest/native-tls"]
+
+[dependencies]
+
+#yaserde = {path = "../yaserde/yaserde"} #, branch="gldf"}
+#yaserde = {version="0.8", git = "https://github.com/holg/yaserde/", branch="gldf"}
+##yaserde_derive = {path = "../yaserde/yaserde_derive"} #, branch="gldf"}
+#yaserde_derive = {version = "0.8", git = "https://github.com/holg/yaserde/", branch="gldf"}
+#serde = { version = "1.0", features = ["derive"] }
+#serde_json = {version = "1.0"}
+# above are not needed, as zip_container is unopinionated about the content
+
+
+zip = {version="2.2", features = ["deflate", "time"], default-features = false}
+regex = { version = "1.11" }
+reqwest = { version = "0.12.8", features = ["json", "blocking", "rustls-tls"] }
+futures = "0.3"
+tokio = { version = "=1.40.0", features = ["full"], optional = true }
+once_cell = "1.20.2"
+
+# PyO3 and related dependencies for Python bindings (optional)
+pyo3 = { version = "0.19.2", optional = true, features = ["extension-module"] }
+
+# Remove 'optional = true' for the build dependency, making it always available
+[build-dependencies]
+version_check = {version = "0.9.5"}
+pyo3-build-config = { version = "0.19.2" }
+
+[package.metadata.maturin]
+# Optional: Configuration for maturin if you're building Python wheels
+name = "zip_container"
+version = "0.1.0"
