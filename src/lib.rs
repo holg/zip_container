@@ -1,13 +1,11 @@
 // lib.rs lib of zip_container
 #[cfg(test)]
 mod tests;
-
-// use crate::{ok_or_err, io_err};
 use std::path::Path;
+pub mod container_error;
+pub mod zip_container_trait;
 pub use container_error::{ZipContainerError};
 pub use zip_container_trait::{ZipContainerTrait, UnifiedFileLoader};
-// use std::path::Path;
-use crate::zip_container_trait::FileLoader;
 
 pub type ZipContainerResult<T> = Result<T, ZipContainerError>;
 
@@ -51,26 +49,43 @@ pub struct ZipContainer {
     pub zip_path: Option<String>,
 }
 impl ZipContainer {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(zip_path: String, definition_path: Option<String>) -> Self {
-    let loader = UnifiedFileLoader;
-    let zip_data = Some(futures::executor::block_on(loader.load(&zip_path)).unwrap());
-    let zip_data = Some(zip_data.unwrap_or_else(|| Vec::new()));
-    ZipContainer {
-        zip_data,
-        definition_path: definition_path.clone(),
-        definition_content: definition_path.and_then(|path| {
-            match Path::new(&path.to_lowercase()).extension().and_then(|ext| ext.to_str()) {
-                Some("xml") => Some(Definition::XML(String::new())),
-                Some("json") => Some(Definition::JSON(String::new())),
-                Some("yaml") => Some(Definition::YAML(String::new())),
-                Some("toml") => Some(Definition::TOML(String::new())),
-                _ => None,
-            }
-        }),
-        files: None,
-        zip_path: Some(zip_path),
+        ZipContainer {
+            zip_data: ZipContainer::load_zip_data(&zip_path, /* Option<&str> */),
+            definition_path: definition_path.clone(),
+            definition_content: definition_path.and_then(|path| {
+                match Path::new(&path.to_lowercase()).extension().and_then(|ext| ext.to_str()) {
+                    Some("xml") => Some(Definition::XML(String::new())),
+                    Some("json") => Some(Definition::JSON(String::new())),
+                    Some("yaml") => Some(Definition::YAML(String::new())),
+                    Some("toml") => Some(Definition::TOML(String::new())),
+                    _ => None,
+                }
+            }),
+            files: None,
+            zip_path: Some(zip_path),
+        }
     }
-}
+
+    #[cfg(target_arch = "wasm32")]
+    pub async fn new(zip_path: String, definition_path: Option<String>) -> Self {
+        ZipContainer {
+            zip_data: ZipContainer::load_zip_data(&zip_path).await,
+            definition_path: definition_path.clone(),
+            definition_content: definition_path.and_then(|path| {
+                match Path::new(&path.to_lowercase()).extension().and_then(|ext| ext.to_str()) {
+                    Some("xml") => Some(Definition::XML(String::new())),
+                    Some("json") => Some(Definition::JSON(String::new())),
+                    Some("yaml") => Some(Definition::YAML(String::new())),
+                    Some("toml") => Some(Definition::TOML(String::new())),
+                    _ => None,
+                }
+            }),
+            files: None,
+            zip_path: Some(zip_path),
+        }
+    }
 }
 
 impl ZipContainerTrait for ZipContainer {
@@ -88,7 +103,6 @@ impl ZipContainerTrait for ZipContainer {
 
     // No need to implement other methods; default implementations are used
 }
-
 
 #[derive(Clone, Debug, Default)]
 pub struct BufFile{
@@ -113,6 +127,5 @@ pub fn process_zip_container(path: &str) -> ZipContainerResult<()> {
 // Python bindings (only compiled when the 'python' feature is enabled)
 #[cfg(feature = "python")]
 pub mod python_bindings;
-pub mod container_error;
-pub mod zip_container_trait;
+
 // mod ::python_tests;

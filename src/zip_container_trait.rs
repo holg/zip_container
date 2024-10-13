@@ -1,8 +1,13 @@
 use crate::{ZipContainerError, ZipContainerResult, BufFile, ok_or_err, io_err, function_path, invalid_data_err, reqwest_err};
-use std::{fs::{File as StdFile}, path::{Path as StdPath}, io::{Read as StIoRead}};
+use std::{io::{Read as StIoRead}};
 
+#[cfg(target_arch = "wasm32")]
 pub trait FileLoader {
-    fn load(&self, path_or_url: &str) -> impl std::future::Future<Output = ZipContainerResult<Vec<u8>>> + Send;
+    async fn load(&self, path_or_url: &str) -> ZipContainerResult<Vec<u8>>;
+}
+#[cfg(not(target_arch = "wasm32"))]
+pub trait FileLoader {
+    fn load(&self, path_or_url: &str) -> ZipContainerResult<Vec<u8>>;
 }
 pub struct LocalFileLoader;
 
@@ -12,25 +17,25 @@ impl FileLoader for UnifiedFileLoader {
         // In WASM, all file operations need to be performed via HTTP requests
         let response = reqwest_err!(reqwest::get(path_or_url).await)?;
         let bytes = reqwest_err!(response.bytes().await)?;
-        Ok(bytes.to_vec())
+            Ok(bytes.to_vec())
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl FileLoader for LocalFileLoader {
-    async fn load(&self, path: &str) -> ZipContainerResult<Vec<u8>> {
+    fn load(&self, path: &str) -> ZipContainerResult<Vec<u8>> {
         let mut file = io_err!(StdFile::open(StdPath::new(path)))?;
-        let mut buffer = Vec::new();
-        io_err!(file.read_to_end(&mut buffer))?;
-        Ok(buffer)
-    }
+            let mut buffer = Vec::new();
+            io_err!(file.read_to_end(&mut buffer))?;
+            Ok(buffer)
+        }
 }
 pub struct UnifiedFileLoader;
 #[cfg(not(target_arch = "wasm32"))]
 impl FileLoader for UnifiedFileLoader {
-    async fn load(&self, path_or_url: &str) -> ZipContainerResult<Vec<u8>> {
+    fn load(&self, path_or_url: &str) -> ZipContainerResult<Vec<u8>> {
         if path_or_url.starts_with("http://") || path_or_url.starts_with("https://") {
-            let response = reqwest_err!(reqwest::get(path_or_url).await)?;
-            let bytes = reqwest_err!(response.bytes().await)?;
+            let response = reqwest_err!(reqwest::blocking::get(path_or_url))?;
+            let bytes = reqwest_err!(response.bytes())?;
             Ok(bytes.to_vec())
         } else {
             let mut file = io_err!(StdFile::open(StdPath::new(path_or_url)))?;
@@ -40,7 +45,35 @@ impl FileLoader for UnifiedFileLoader {
         }
     }
 }
+
 pub trait ZipContainerTrait {
+    #[cfg(not(target_arch = "wasm32"))]
+    fn load_zip_data(zip_path: &str) -> Option<Vec<u8>>{
+        let loader = UnifiedFileLoader;
+        let zip_data_result = loader.load(zip_path); // Returns a Result<Vec<u8>, ZipContainerError>
+
+        match zip_data_result {
+            Ok(data) => Some(data),
+            Err(e) => {
+                log::error!("Failed to load ZIP data: {:?}", e);
+                None
+            }
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn load_zip_data(zip_path: &str) -> Option<Vec<u8>>{
+        let loader = UnifiedFileLoader;
+        let zip_data_result = loader.load(zip_path).await; // Returns a Result<Vec<u8>, ZipContainerError>
+
+        match zip_data_result {
+            Ok(data) => Some(data),
+            Err(e) => {
+                log::error!("Failed to load ZIP data: {:?}", e);
+                None
+            }
+        }
+    }
     /// Returns a reference to the ZIP data buffer.
     fn zip_data(&self) -> ZipContainerResult<&[u8]> {
         ok_or_err!(None::<&[u8]>, "zip_data is not set")
@@ -55,7 +88,7 @@ pub trait ZipContainerTrait {
     fn set_files(&mut self, files: Vec<BufFile>);
 
     /// Loads a file from the ZIP data.
-    fn load_file_from_zip(&self, file_path: &str) -> impl std::future::Future<Output = ZipContainerResult<Vec<u8>>> + Send where Self: Sync {async {
+    fn load_file_from_zip(&self, file_path: &str) -> ZipContainerResult<Vec<u8>> where Self: Sync {
         let zip_data = self.zip_data()?;
         let reader = std::io::Cursor::new(zip_data);
         let mut zip = io_err!(zip::ZipArchive::new(reader))?;
@@ -63,31 +96,32 @@ pub trait ZipContainerTrait {
         let mut buffer = Vec::new();
         io_err!(file.read_to_end(&mut buffer))?;
         Ok(buffer)
-    } }
+    }
 
     /// Loads a file as a string from the ZIP data.
-    fn load_file_str(&self, file_path: &str) -> impl std::future::Future<Output = ZipContainerResult<String>> + Send where Self: Sync {async {
-        let buffer = self.load_file_from_zip(file_path).await?;
+    fn load_file_str(&self, file_path: &str) -> ZipContainerResult<String> where Self: Sync {
+        let buffer = self.load_file_from_zip(file_path)?;
         let content = invalid_data_err!(String::from_utf8(buffer))?;
         Ok(content)
-    } }
+    }
 
     /// Loads the definition file as a string.
-    fn load_definition_file_str(&self) -> impl std::future::Future<Output = ZipContainerResult<String>> + Send where Self: Sync {async {
+    fn load_definition_file_str(&self) -> ZipContainerResult<String> where Self: Sync   {
         let definition_path = self.definition_path()?;
-        self.load_file_str(definition_path).await
-    } }
+        self.load_file_str(definition_path)
+    }
 
     /// Loads a file either from the ZIP data or from a URL.
-    fn load_file(&self, file_path_or_url: &str) -> impl std::future::Future<Output = ZipContainerResult<Vec<u8>>> + Send where Self: Sync {async move {
+    #[cfg(target_arch = "wasm32")]
+    async fn load_file(&self, file_path_or_url: &str) -> ZipContainerResult<Vec<u8>> where Self: Sync {
         // Attempt to load from ZIP data
-        if let Ok(data) = self.load_file_from_zip(file_path_or_url).await {
+        if let Ok(data) = self.load_file_from_zip(file_path_or_url) {
             return Ok(data);
         }
 
         // If not found in ZIP, check if it's a URL
         if file_path_or_url.starts_with("http://") || file_path_or_url.starts_with("https://") {
-            // Fetch from URL
+            // Fetch from URL asynchronously
             let response = reqwest_err!(reqwest::get(file_path_or_url).await)?;
             let bytes = reqwest_err!(response.bytes().await)?;
             return Ok(bytes.to_vec());
@@ -98,32 +132,71 @@ pub trait ZipContainerTrait {
             module_path: function_path!(),
             message: format!("File '{}' not found in ZIP data or accessible via URL", file_path_or_url),
         })
-    } }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn load_file(&self, file_path_or_url: &str) -> ZipContainerResult<Vec<u8>> where Self: Sync{
+        // Attempt to load from ZIP data
+        if let Ok(data) = self.load_file_from_zip(file_path_or_url) {
+            return Ok(data);
+        }
+
+        // If not found in ZIP, check if it's a URL
+        if file_path_or_url.starts_with("http://") || file_path_or_url.starts_with("https://") {
+            // Fetch from URL
+            let response = reqwest_err!(reqwest::blocking::get(file_path_or_url))?;
+            let bytes = reqwest_err!(response.bytes())?;
+            return Ok(bytes.to_vec());
+        }
+
+        // File not found
+        Err(ZipContainerError::MissingValue {
+            module_path: function_path!(),
+            message: format!("File '{}' not found in ZIP data or accessible via URL", file_path_or_url),
+        })
+    }
 
     /// Processes files referenced in the definition.
-    fn process_files(&mut self) -> impl std::future::Future<Output = ZipContainerResult<()>> + Send where Self: Sync, Self: Send {async {
-        let file_paths = self.extract_file_paths_from_definition().await?;
+    #[cfg(target_arch = "wasm32")]
+    async fn process_files(&mut self) -> ZipContainerResult<()> where Self: Sync{
+        let file_paths = self.extract_file_paths_from_definition()?;
         let mut files = Vec::new();
         for path in file_paths {
-            let content = self.load_file(&path).await?;
+            let content = self.load_file(&path).await;
             files.push(BufFile {
                 name: Some(path.clone()),
-                content: Some(content),
+                content: content.ok(),
                 path: Some(path),
                 ..Default::default()
             });
         }
         self.set_files(files);
         Ok(())
-    } }
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    fn process_files(&mut self) -> ZipContainerResult<()> where Self: Sync{
+        let file_paths = self.extract_file_paths_from_definition()?;
+        let mut files = Vec::new();
+        for path in file_paths {
+            let content = self.load_file(&path);
+            files.push(BufFile {
+                name: Some(path.clone()),
+                content: content.ok(),
+                path: Some(path),
+                ..Default::default()
+            });
+        }
+        self.set_files(files);
+        Ok(())
+    }
 
     /// Extracts file paths from the definition content.
-    fn extract_file_paths_from_definition(&self) -> impl std::future::Future<Output = ZipContainerResult<Vec<String>>> + Send {async {
+    fn extract_file_paths_from_definition(&self) -> ZipContainerResult<Vec<String>>{
         // let definition_content = self.load_definition_file_str().await?;
         // Parse the definition_content to extract file paths
         // This needs to be implemented as per your definition file format
         Ok(vec![]) // Placeholder
-    } }
+    }
 
     /// get all files from the zip
 

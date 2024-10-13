@@ -16,30 +16,18 @@ pub fn main() {
     });
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-#[tokio::main]
-async fn main() -> ZipContainerResult<()> {
-    run().await
-}
-
-async fn run() -> ZipContainerResult<()> {
+fn main() -> ZipContainerResult<()> {
     // Create a new ZipContainer instance
     let mut zip_container = ZipContainer::new("https://raw.githubusercontent.com/holg/gldf-rs/refs/heads/master/tests/data/test.gldf".to_string(), Some("product.xml".to_string()));
-    let _ = &zip_container.set_files(zip_container.get_zip_files()?);
-    let _ = &zip_container.process_files().await?;
-    // Write zip_data to a local file
-    // if let Some(ref zip_data) = zip_container.zip_data {
-    //     let mut file = File::create("output.zip").expect("Failed to create output.zip");
-    //     file.write_all(zip_data).expect("Failed to write zip_data to output.zip");
-    //     println!("zip_data has been written to output.zip");
-    // }
-    // Access the loaded files
-    if let Some(ref files) = zip_container.files {
-        for file in files {
-            println!("Loaded file: {:?}", file.name);
-        }
+    for file in zip_container.get_zip_files()?.iter(){
+            println!("Loaded file name: {}, size: {}, path: {}, file_id: {}",
+                file.name.clone().expect("Failed to get file name"),
+                file.size.clone().expect("Failed to get file size"),
+                file.path.clone().expect("Failed to get file path"),
+                file.file_id.clone().unwrap_or("Failed to get file id".to_string())
+            );
     }
-    let product_xml_string = zip_container.load_definition_file_str().await?;
+    let product_xml_string = zip_container.load_definition_file_str()?;
     let product_xml = product_xml_string.as_str();
     println!("product.xml: {}", product_xml);
     Ok(())
