@@ -18,7 +18,7 @@ pub fn main() {
 
 fn main() -> ZipContainerResult<()> {
     // Create a new ZipContainer instance
-    let mut zip_container = ZipContainer::new("https://raw.githubusercontent.com/holg/gldf-rs/refs/heads/master/tests/data/test.gldf".to_string(), Some("product.xml".to_string()));
+    let zip_container = ZipContainer::new("https://raw.githubusercontent.com/holg/gldf-rs/refs/heads/master/tests/data/test.gldf".to_string(), Some("product.xml".to_string()));
     for file in zip_container.get_zip_files()?.iter(){
             println!("Loaded file name: {}, size: {}, path: {}, file_id: {}",
                 file.name.clone().expect("Failed to get file name"),

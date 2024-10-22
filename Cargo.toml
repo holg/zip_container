@@ -18,6 +18,10 @@ path = "src/lib.rs"
 name = "usage_example"
 required-features = ["native-runtime"]
 
+#[[example]]
+#name = "wasm_example_leptos"
+#path = "examples/wasm_example_leptos/src/main.rs"
+#required-features = ["tokio"]
 
 
 [features]
@@ -45,13 +49,19 @@ futures = "0.3"
 pyo3 = { version = "0.19.2", optional = true, features = ["extension-module"] }
 pyo3-asyncio = { version = "0.19", features = ["attributes", "tokio-runtime"], optional = true }
 log = "0.4.22"
+serde = { version = "1.0.210", features = ["derive", ] }
 # Remove 'optional = true' for the build dependency, making it always available
 
 [target.wasm32-unknown-unknown.dependencies]
-tokio = { version = "1", features = ["macros", "rt"], optional = true }
-
-[target.not.wasm32-unknown-unknown.dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs"], optional = true }
+tokio = { version = "1", features = ["macros", "rt", "io-util"], optional = true }
+wasm-bindgen = "0.2.95"
+wasm-bindgen-futures = "0.4.35"
+serde-wasm-bindgen = "0.6"
+web-sys = "0.3.72"
+js-sys = "0.3.72"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Native-specific dependencies
+tokio = { version = "1.40.0", default-features = false, features = ["sync", "macros", "io-util", "rt", "time", "fs"] }
 
 
 [build-dependencies]

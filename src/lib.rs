@@ -1,13 +1,10 @@
-// lib.rs lib of zip_container
-#[cfg(test)]
-mod tests;
-use std::path::Path;
+// src/lib.rs lib of zip_container
 pub mod container_error;
 pub mod zip_container_trait;
 pub use container_error::{ZipContainerError};
-pub use zip_container_trait::{ZipContainerTrait, UnifiedFileLoader};
-
+pub use zip_container_trait::{ZipContainerTrait, UnifiedFileLoader, FileLoader};
 pub type ZipContainerResult<T> = Result<T, ZipContainerError>;
+use serde::{Serialize, Deserialize};
 
 pub trait Logger {
     fn log(&self, message: &str);
@@ -16,7 +13,7 @@ pub trait AsyncLogger {
     fn log(&self, message: &str) -> impl std::future::Future<Output = ()> + Send;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Definition {
     XML(String),
     JSON(String),
@@ -50,6 +47,19 @@ pub struct ZipContainer {
 }
 impl ZipContainer {
     #[cfg(not(target_arch = "wasm32"))]
+    pub fn load_zip_data(zip_path: &str) -> Option<Vec<u8>> {
+        let loader = UnifiedFileLoader;
+        match loader.load(zip_path) {
+            Ok(data) => Some(data),
+            Err(e) => {
+                // Log the error
+                eprintln!("Failed to load ZIP data: {:?}", e);
+                None
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(zip_path: String, definition_path: Option<String>) -> Self {
         ZipContainer {
             zip_data: ZipContainer::load_zip_data(&zip_path, /* Option<&str> */),
@@ -68,24 +78,6 @@ impl ZipContainer {
         }
     }
 
-    #[cfg(target_arch = "wasm32")]
-    pub async fn new(zip_path: String, definition_path: Option<String>) -> Self {
-        ZipContainer {
-            zip_data: ZipContainer::load_zip_data(&zip_path).await,
-            definition_path: definition_path.clone(),
-            definition_content: definition_path.and_then(|path| {
-                match Path::new(&path.to_lowercase()).extension().and_then(|ext| ext.to_str()) {
-                    Some("xml") => Some(Definition::XML(String::new())),
-                    Some("json") => Some(Definition::JSON(String::new())),
-                    Some("yaml") => Some(Definition::YAML(String::new())),
-                    Some("toml") => Some(Definition::TOML(String::new())),
-                    _ => None,
-                }
-            }),
-            files: None,
-            zip_path: Some(zip_path),
-        }
-    }
 }
 
 impl ZipContainerTrait for ZipContainer {
@@ -104,7 +96,7 @@ impl ZipContainerTrait for ZipContainer {
     // No need to implement other methods; default implementations are used
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct BufFile{
     pub name: Option<String>,
     pub content: Option<Vec<u8>>,
@@ -113,19 +105,12 @@ pub struct BufFile{
     pub path: Option<String>,
     pub size: Option<u64>,
 }
-// #[derive(Clone, Debug, Default)]
-// pub struct FileBufZipcontainer<'a>{
-//     pub files: Vec<BufFile>,
-//     pub zip_container: ZipContainer,
-// }
 
-pub fn process_zip_container(path: &str) -> ZipContainerResult<()> {
-    println!("Processing ZIP container at: {}", path);
-    Ok(())
-}
 
 // Python bindings (only compiled when the 'python' feature is enabled)
 #[cfg(feature = "python")]
 pub mod python_bindings;
-
+#[cfg(target_arch = "wasm32")]
+pub mod wasm_bindings;
+mod tests;
 // mod ::python_tests;

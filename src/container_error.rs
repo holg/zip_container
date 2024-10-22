@@ -1,5 +1,6 @@
 // container_error.rs
 use std::fmt;
+use std::string::FromUtf8Error;
 use std::error::Error;
 
 /// Enum representing various errors that can occur in the ZipContainer.
@@ -29,6 +30,11 @@ pub enum ZipContainerError {
         module_path: &'static str,
         source: reqwest::Error,
     },
+    UnsupportedOperation {
+        module_path: &'static str,
+        message: String,
+    },
+    Utf8Error(FromUtf8Error),
 }
 
 impl fmt::Display for ZipContainerError {
@@ -47,6 +53,15 @@ impl fmt::Display for ZipContainerError {
             ZipContainerError::ReqwestError { module_path, source } => {
                 write!(f, "{}: {}", module_path, source)
             }
+            ZipContainerError::UnsupportedOperation { module_path, message } => {
+                write!(f, "{}: {}", module_path, message)
+            }
+            ZipContainerError::Utf8Error(e) => {
+                write!(f, "UTF-8 error: {}", e)
+            }
+            // _ => {
+            //         write!(f, "Unsupported operation")
+            // }
         }
     }
 }
@@ -57,6 +72,7 @@ impl Error for ZipContainerError {
         match self {
             ZipContainerError::IOError { source, .. } => Some(source),
             ZipContainerError::ReqwestError { source, .. } => Some(source),
+            ZipContainerError::Utf8Error(e) => Some(e),
             _ => None,
         }
     }
