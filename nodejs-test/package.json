@@ -1,0 +1,12 @@
+{
+  "name": "nodejs-test",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-wasm-modules --experimental-top-level-await test.js"
+  },
+  "keywords": [],
+  "author": "Holger Trahe <trahe@mac.com>",
+  "license": "ISC",
+  "description": "NodeJS test for the zip_container wasm module"
+}

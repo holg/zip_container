@@ -77,6 +77,9 @@ impl ZipContainer {
             zip_path: Some(zip_path),
         }
     }
+    pub async fn read_file_async(&self, file_name: &str) -> ZipContainerResult<Vec<u8>> {
+        self.load_file_async(file_name).await
+    }
 
 }
 

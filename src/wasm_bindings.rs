@@ -3,9 +3,9 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::{future_to_promise, JsFuture};
 use serde_wasm_bindgen;
-use js_sys::{Promise, Uint8Array};
 use crate::{ZipContainer};
 use crate::zip_container_trait::ZipContainerTrait;
+use js_sys::{Function, Promise, Uint8Array, Reflect};
 use std::rc::Rc;
 
 #[wasm_bindgen]
@@ -42,18 +42,56 @@ impl WasmZipContainer {
         let definition_path_clone = definition_path.clone();
 
         let fut = async move {
-            // Fetch the ZIP data from the URL
-            let window = web_sys::window().ok_or_else(|| JsValue::from_str("No global `window` exists"))?;
-            let resp_value = JsFuture::from(window.fetch_with_str(&url))
+            // Get the global object (works in both browser and Node.js)
+            let global = js_sys::global();
+
+            // Get the 'fetch' function from the global object
+            let fetch_fn = Reflect::get(&global, &JsValue::from_str("fetch"))
+                .map_err(|_| JsValue::from_str("Failed to get 'fetch' function"))?;
+
+            // Ensure that 'fetch' is a function
+            let fetch_fn = fetch_fn
+                .dyn_into::<Function>()
+                .map_err(|_| JsValue::from_str("'fetch' is not a function"))?;
+
+            // Call 'fetch' with the URL
+            let fetch_promise_value = fetch_fn
+                .call1(&global, &JsValue::from_str(&url))
+                .map_err(|_| JsValue::from_str("Failed to call 'fetch' function"))?;
+
+            // Convert fetch_promise_value to js_sys::Promise
+            let fetch_promise = fetch_promise_value
+                .dyn_into::<js_sys::Promise>()
+                .map_err(|_| JsValue::from_str("Failed to cast fetch result to Promise"))?;
+
+            let resp_value = JsFuture::from(fetch_promise)
                 .await
                 .map_err(|e| JsValue::from_str(&format!("Fetch error: {:?}", e)))?;
-            let resp: web_sys::Response = resp_value.dyn_into().map_err(|_| JsValue::from_str("Failed to cast to Response"))?;
+
+            let resp = resp_value
+                .dyn_into::<web_sys::Response>()
+                .map_err(|_| JsValue::from_str("Failed to cast to Response"))?;
+
             if !resp.ok() {
-                return Err(JsValue::from_str(&format!("Network response was not ok: {}", resp.status())));
+                return Err(JsValue::from_str(&format!(
+                    "Network response was not ok: {}",
+                    resp.status()
+                )));
             }
-            let array_buffer = JsFuture::from(resp.array_buffer()?)
+
+            // Get the array buffer promise
+            let array_buffer_promise_value = resp.array_buffer()
+                .map_err(|_| JsValue::from_str("Failed to get array buffer"))?;
+
+            // Convert to js_sys::Promise
+            let array_buffer_promise = array_buffer_promise_value
+                .dyn_into::<js_sys::Promise>()
+                .map_err(|_| JsValue::from_str("Failed to cast array buffer result to Promise"))?;
+
+            let array_buffer = JsFuture::from(array_buffer_promise)
                 .await
                 .map_err(|e| JsValue::from_str(&format!("ArrayBuffer error: {:?}", e)))?;
+
             let uint8_array = Uint8Array::new(&array_buffer);
 
             // Convert Uint8Array to Vec<u8>
@@ -90,11 +128,20 @@ impl WasmZipContainer {
 
     /// Read a specific file's content from the ZIP archive
     #[wasm_bindgen]
-    pub fn read_file(&self, file_name: &str) -> Result<Uint8Array, JsValue> {
-        self.inner
-            .load_file(file_name)
-            .map(|content| Uint8Array::from(&content[..]))
-            .map_err(|e| JsValue::from_str(&format!("Error: {:?}", e)))
+    pub fn read_file(&self, file_name: &str) -> Promise {
+        let container = self.inner.clone();
+        let file_name = file_name.to_string();
+
+        let fut = async move {
+            container
+                .read_file_async(&file_name)
+                .await
+                .map(|content| Uint8Array::from(&content[..]))
+                .map(JsValue::from)
+                .map_err(|e| JsValue::from_str(&format!("Error: {:?}", e)))
+        };
+
+        wasm_bindgen_futures::future_to_promise(fut)
     }
 
     // Add additional methods as needed
