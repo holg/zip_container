@@ -49,10 +49,10 @@ jobs:
       - name: Verify OpenSSL installation
         run: openssl version
       - name: Set up OpenSSL environment variable
-        run: echo "OPENSSL_DIR=/usr/lib/ssl" >> $GITHUB_ENV
+        run: echo "OPENSSL_LIB_DIR=/usr/lib/ssl" >> $GITHUB_ENV
       - name: Build
         env:
-            OPENSSL_DIR: /usr/lib/ssl
+          OPENSSL_LIB_DIR: /usr/lib/ssl
         run: cargo build --release
       - name: Build wheels
         uses: PyO3/maturin-action@v1
