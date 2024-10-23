@@ -102,8 +102,6 @@ jobs:
         with:
           python-version: 3.x
           architecture: ${{ matrix.platform.target }}
-      - name: Install Perl dependencies
-        run: sudo apt-get install -y libperl-dev cpanminus && sudo cpanm IPC::Cmd
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
