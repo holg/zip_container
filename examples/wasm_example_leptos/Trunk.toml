@@ -1,0 +1,6 @@
+[[build.targets]]
+name = "wasm32-unknown-unknown" # This is for your WASM target
+crate_types = ["cdylib"]
+
+[dev]
+autoreload = true
