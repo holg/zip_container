@@ -75,6 +75,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.8
+      - name: Check Python Version
+        run: python --version
       - name: Install Perl dependencies
         run: sudo apt-get install -y libperl-dev cpanminus && sudo cpanm IPC::Cmd
       - name: Build wheels
