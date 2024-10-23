@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: 3.8
       - name: Install Perl dependencies
         run: sudo apt-get install -y libperl-dev cpanminus && sudo cpanm IPC::Cmd
       - name: Build wheels
@@ -99,8 +99,8 @@ jobs:
             target: x64
           - runner: windows-latest
             target: x86
-    #          - runner: windows-latest
-    #            target: arm64
+          - runner: windows-latest
+            target: arm64
 
     steps:
       - uses: actions/checkout@v4
