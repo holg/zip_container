@@ -1,12 +1,13 @@
 // src/wasm_bindings.rs
 
-use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::{future_to_promise, JsFuture};
-use serde_wasm_bindgen;
-use crate::{ZipContainer};
 use crate::zip_container_trait::ZipContainerTrait;
-use js_sys::{Function, Promise, Uint8Array, Reflect};
+use crate::ZipContainer;
+use js_sys::{Function, Promise, Reflect, Uint8Array};
+use serde_wasm_bindgen;
 use std::rc::Rc;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::{future_to_promise, JsFuture};
 
 #[wasm_bindgen]
 pub struct WasmZipContainer {
@@ -17,7 +18,10 @@ pub struct WasmZipContainer {
 impl WasmZipContainer {
     /// Constructor that accepts raw ZIP data as a Uint8Array
     #[wasm_bindgen(constructor)]
-    pub fn new(zip_data: Uint8Array, definition_path: Option<String>) -> Result<WasmZipContainer, JsValue> {
+    pub fn new(
+        zip_data: Uint8Array,
+        definition_path: Option<String>,
+    ) -> Result<WasmZipContainer, JsValue> {
         // Convert Uint8Array to Vec<u8>
         let mut data = vec![0; zip_data.length() as usize];
         zip_data.copy_to(&mut data);
@@ -80,7 +84,8 @@ impl WasmZipContainer {
             }
 
             // Get the array buffer promise
-            let array_buffer_promise_value = resp.array_buffer()
+            let array_buffer_promise_value = resp
+                .array_buffer()
                 .map_err(|_| JsValue::from_str("Failed to get array buffer"))?;
 
             // Convert to js_sys::Promise

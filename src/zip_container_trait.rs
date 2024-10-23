@@ -8,6 +8,8 @@ use std::future::Future;
 use std::io::Read as StdIoRead;
 use std::pin::Pin;
 use std::string::FromUtf8Error;
+#[cfg(not(target_arch = "wasm32"))]
+use std::{path::Path as StdPath, fs::File as StdFile};
 
 #[cfg(not(target_arch = "wasm32"))]
 type ZipContainerFuture<T> = Pin<Box<dyn Future<Output = ZipContainerResult<T>> + Send>>;
@@ -49,7 +51,7 @@ impl FileLoader for UnifiedFileLoader {
             // Return an error indicating that synchronous loading isn't supported in WASM
             Err(ZipContainerError::UnsupportedOperation {
                 module_path: function_path!(),
-                message: "Synchronous file loading is not supported in WASM".to_string(),
+                message: format!("Synchronous file loading is not supported in WASM: {}", path_or_url),
             })
         }
     }

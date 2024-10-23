@@ -1,6 +1,8 @@
+// src/tests.rs
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests {
-    use crate::{ZipContainer, ZipContainerTrait, BufFile, Definition};
+    use crate::{BufFile, Definition, ZipContainer, ZipContainerTrait};
     // use super::*;
     // use std::path::Path;
 
@@ -132,5 +134,71 @@ mod tests {
         assert_eq!(zip_container.zip_path, Some(zip_path));
         assert_eq!(zip_container.definition_path, definition_path);
         assert!(matches!(zip_container.definition_content, Some(Definition::JSON(_))));
+    }
+}
+
+// src/tests.rs
+
+#[cfg(test)]
+#[cfg(target_arch = "wasm32")]
+mod tests {
+    use crate::wasm_bindings::WasmZipContainer;
+    // use crate::ZipContainerTrait;
+    use js_sys::{Promise, Uint8Array, Reflect, Function};
+    use wasm_bindgen::{JsCast, JsValue};
+
+    use wasm_bindgen_futures::JsFuture;
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser );
+    #[wasm_bindgen_test]
+    async fn test_get_file_names() {
+        // Call from_url, which returns a Promise
+        let container_promise = WasmZipContainer::from_url(
+            "https://raw.githubusercontent.com/holg/gldf-rs/refs/heads/master/tests/data/test.gldf".to_string(),
+            Some("product.xml".to_string()),
+        );
+
+        // Await the Promise to get the JsValue representing the WasmZipContainer
+        let container_js_value = JsFuture::from(container_promise).await.unwrap();
+
+        // Get the `get_file_names` method from the JavaScript object
+        let get_file_names = Reflect::get(&container_js_value, &JsValue::from_str("get_file_names"))
+            .unwrap()
+            .dyn_into::<Function>()
+            .unwrap();
+
+        // Call the `get_file_names` method
+        let file_names_js_value = get_file_names.call0(&container_js_value).unwrap();
+
+        // Convert JsValue to Vec<String>
+        let file_names: Vec<String> = serde_wasm_bindgen::from_value(file_names_js_value).unwrap();
+
+        // Perform your assertions
+        assert!(file_names.contains(&"product.xml".to_string()));
+        assert!(file_names.contains(&"ldc/diffuse.ldt".to_string()));
+    }
+    #[wasm_bindgen_test]
+    async fn test_read_file() {
+        // Similar setup as before
+        let zip_data = include_bytes!("../../test_data/test.gldf").to_vec();
+        let zip_data_js = Uint8Array::from(&zip_data[..]);
+        let container = WasmZipContainer::new(zip_data_js, None).unwrap();
+
+        // Read a specific file
+        let promise = container.read_file("product.xml");
+        let js_value = JsFuture::from(Promise::from(promise))
+            .await
+            .unwrap();
+
+        // Convert JsValue (Uint8Array) to Vec<u8>
+        let uint8_array = Uint8Array::new(&js_value);
+        let mut content = vec![0; uint8_array.length() as usize];
+        uint8_array.copy_to(&mut content);
+
+        // Convert content to string
+        let content_str = String::from_utf8(content).unwrap();
+
+        // Perform assertions on the content
+        assert!(content_str.contains("<Product"));
     }
 }

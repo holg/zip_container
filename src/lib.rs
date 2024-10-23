@@ -5,7 +5,8 @@ pub use container_error::{ZipContainerError};
 pub use zip_container_trait::{ZipContainerTrait, UnifiedFileLoader, FileLoader};
 pub type ZipContainerResult<T> = Result<T, ZipContainerError>;
 use serde::{Serialize, Deserialize};
-
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path as StdPath;
 pub trait Logger {
     fn log(&self, message: &str);
 }
@@ -65,7 +66,7 @@ impl ZipContainer {
             zip_data: ZipContainer::load_zip_data(&zip_path, /* Option<&str> */),
             definition_path: definition_path.clone(),
             definition_content: definition_path.and_then(|path| {
-                match Path::new(&path.to_lowercase()).extension().and_then(|ext| ext.to_str()) {
+                match StdPath::new(&path.to_lowercase()).extension().and_then(|ext| ext.to_str()) {
                     Some("xml") => Some(Definition::XML(String::new())),
                     Some("json") => Some(Definition::JSON(String::new())),
                     Some("yaml") => Some(Definition::YAML(String::new())),

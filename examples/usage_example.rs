@@ -1,21 +1,10 @@
 // examples/usage_example.rs
+
 extern crate zip_container;
+#[cfg(not(target_arch = "wasm32"))]
 use zip_container::{ZipContainer, ZipContainerResult, ZipContainerTrait};
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(start)]
-pub fn main() {
-    wasm_bindgen_futures::spawn_local(async {
-        if let Err(e) = run().await {
-            // Handle error
-            web_sys::console::error_1(&format!("Error: {:?}", e).into());
-        }
-    });
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> ZipContainerResult<()> {
     // Create a new ZipContainer instance
     let zip_container = ZipContainer::new("https://raw.githubusercontent.com/holg/gldf-rs/refs/heads/master/tests/data/test.gldf".to_string(), Some("product.xml".to_string()));
@@ -32,3 +21,10 @@ fn main() -> ZipContainerResult<()> {
     println!("product.xml: {}", product_xml);
     Ok(())
 }
+
+#[cfg(target_arch = "wasm32")]
+pub fn main() {
+    use web_sys::{console};
+    console::log_1(&"This example is not supported in WASM.".into());
+}
+
