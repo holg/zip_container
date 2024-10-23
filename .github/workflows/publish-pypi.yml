@@ -48,15 +48,15 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config  libssl-dev
       - name: Verify OpenSSL installation
         run: openssl version
-      - name: Set up OPENSSL_LIB_DIR environment variable
-        run: echo "OPENSSL_LIB_DIR=/usr/lib/ssl" >> $GITHUB_ENV
-      - name: Set up OPENSSL_DIR environment variable
-        run: echo "OPENSSL_DIR=/usr/lib/ssl" >> $GITHUB_ENV
+#      - name: Set up OPENSSL_LIB_DIR environment variable
+#        run: echo "OPENSSL_LIB_DIR=/usr/lib/ssl" >> $GITHUB_ENV
+#      - name: Set up OPENSSL_DIR environment variable
+#        run: echo "OPENSSL_DIR=/usr/lib/ssl" >> $GITHUB_ENV
       - name: Build
-        env:
-          OPENSSL_LIB_DIR: /usr/lib/ssl
-          OPENSSL_DIR: /usr/lib/ssl
-          OPENSSL_INCLUDE_DIR: /usr/include/openssl
+#        env:
+#          OPENSSL_LIB_DIR: /usr/lib/ssl
+#          OPENSSL_DIR: /usr/lib/ssl
+#          OPENSSL_INCLUDE_DIR: /usr/include/openssl
         run: cargo build --release
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -93,8 +93,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config  libssl-dev
       - name: Verify OpenSSL installation
         run: openssl version
-      - name: SET OpenSSL directory
-        run: export OPENSSL_DIR=/usr/lib/ssl
+#      - name: SET OpenSSL directory
+#        run: export OPENSSL_DIR=/usr/lib/ssl
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
