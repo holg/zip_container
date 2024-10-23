@@ -79,6 +79,25 @@ jobs:
           python-version: 3.x
       - name: Install pkg-config, SSL and Perl dependencies
         run: sudo apt-get install -y pkg-config libssl-dev libperl-dev cpanminus && sudo cpanm IPC::Cmd
+      - name: Set OpenSSL directory
+        run:
+            case ${{ matrix.platform.target }} in
+              x86_64|x86)
+                echo "OPENSSL_DIR=/usr/lib/ssl" >> $GITHUB_ENV
+                ;;
+              aarch64)
+                echo "OPENSSL_DIR=/usr/lib/aarch64-linux-gnu/ssl" >> $GITHUB_ENV
+                ;;
+              armv7)
+                echo "OPENSSL_DIR=/usr/lib/arm-linux-gnueabihf/ssl" >> $GITHUB_ENV
+                ;;
+              s390x)
+                echo "OPENSSL_DIR=/usr/lib/s390x-linux-gnu/ssl" >> $GITHUB_ENV
+                ;;
+              ppc64le)
+                echo "OPENSSL_DIR=/usr/lib/powerpc64le-linux-gnu/ssl" >> $GITHUB_ENV
+                ;;
+            esac
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
