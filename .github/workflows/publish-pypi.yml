@@ -72,8 +72,13 @@ jobs:
 #        run: echo "OPENSSL_DIR=$(openssl version -d | cut -d '\"' -f2)" >> $GITHUB_ENV
 #      - name: Print environment variables
 #        run: printenv
-      - name: EXPORT export CFLAGS_aarch64_unknown_linux_gnu
-        run: export CFLAGS_aarch64_unknown_linux_gnu="-D__ARM_ARCH=8"
+      - name: Set CFLAGS for aarch64
+        if: matrix.platform.target == 'aarch64'
+        run: echo "CFLAGS_aarch64_unknown_linux_gnu=-march=armv8-a -D__ARM_ARCH=8" >> $GITHUB_ENV
+
+      - name: Verify CFLAGS_aarch64_unknown_linux_gnu
+        if: matrix.platform.target == 'aarch64'
+        run: echo "CFLAGS_aarch64_unknown_linux_gnu=${{ env.CFLAGS_aarch64_unknown_linux_gnu }}"
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
