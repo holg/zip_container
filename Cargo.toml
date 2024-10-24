@@ -42,7 +42,7 @@ python = ["pyo3","pyo3-asyncio", "tokio"]
 
 zip = {version="2.2", features = ["deflate", "time"], default-features = false}
 regex = { version = "1.11" }
-reqwest = { version = "0.12.8", features = ["json", "blocking", "rustls-tls"] }
+reqwest = { version = "0.12.8", default-features = false, features = ["json", "blocking", "rustls-tls"] }
 futures = "0.3"
 #tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs"], optional = true }
 # PyO3 and related dependencies for Python bindings (optional)
