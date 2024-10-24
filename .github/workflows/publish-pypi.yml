@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   linux:
@@ -72,6 +72,8 @@ jobs:
 #        run: echo "OPENSSL_DIR=$(openssl version -d | cut -d '\"' -f2)" >> $GITHUB_ENV
 #      - name: Print environment variables
 #        run: printenv
+      - name: EXPORT export CFLAGS_aarch64_unknown_linux_gnu
+        run: export CFLAGS_aarch64_unknown_linux_gnu="-D__ARM_ARCH=8"
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
