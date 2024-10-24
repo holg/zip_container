@@ -26,7 +26,7 @@ required-features = ["native-runtime"]
 
 [features]
 default = ["native-runtime"]
-native-runtime = ["tokio", "reqwest/native-tls"]
+native-runtime = ["tokio", "reqwest/rustls-tls"]
 python = ["pyo3","pyo3-asyncio", "tokio"]
 
 [dependencies]
