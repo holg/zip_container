@@ -240,8 +240,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./dist
-      - name: Create GitHub Release
-        id: create_release
+      - name: Create GitHub PreRelease
+        id: create_prerelease
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -257,5 +257,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist
-          asset_name: binaries.zip
+          asset_name: wheels-${{ matrix.platform }}-${{ matrix.target }}.zip
           asset_content_type: application/zip

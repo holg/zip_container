@@ -12,5 +12,7 @@ fn main() {
 
 #[cfg(not(feature = "python"))]
 fn main() {
-    // If the 'python' feature is not enabled, we do nothing in the build script.
+    if env::var("CARGO_CFG_TARGET_ARCH").unwrap() == "arm" {
+        println!("cargo:rustc-cfg=__ARM_ARCH");
+    }
 }
