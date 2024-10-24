@@ -1,3 +1,4 @@
+[![PyPiCI](https://github.com/holg/zip_container/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/holg/zip_container/actions/workflows/publish-pypi.yml)
 # zip_container
 
 `zip_container` is a versatile Rust library designed to handle ZIP files as containers. It is particularly useful for formats like GLDF or L3D but can be applied to many other formats. The library provides bindings for native Rust applications, Python, and WebAssembly (wasm32), making it a flexible choice for various platforms.
