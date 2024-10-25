@@ -1,0 +1,40 @@
+name: Prerelease
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prerelease:
+    name: Prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+      - name: Create GitHub Prerelease
+        id: create_prerelease
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref || 'prerelease' }}
+          release_name: Pre-release ${{ github.ref || 'prerelease' }}
+          draft: false
+          prerelease: true
+      - name: Upload Release Asset
+        if: steps.create_prerelease.outputs.upload_url != ''
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_prerelease.outputs.upload_url }}
+          asset_path: ./dist/wheels-*.zip
+          asset_name: wheels-*.zip
+          asset_content_type: application/zip
+      - name: Debug Upload URL
+        if: steps.create_prerelease.outputs.upload_url == ''
+        run: echo "Upload URL not set. Skipping upload."
