@@ -250,25 +250,22 @@ jobs:
         run: ls -R ./dist
       - name: Upload Release Asset
         if: steps.create_prerelease.outputs.upload_url != ''
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
+        with:
+            files: |
+              ./dist/wheels-musllinux-aarch64/*.whl
+              ./dist/wheels-musllinux-armv7/*.whl
+              ./dist/wheels-musllinux-x86/*.whl
+              ./dist/wheels-musllinux-x86_64/*.whl
+              ./dist/wheels-sdist/*.tar.gz
+              ./dist/wheels-windows-x64/*.whl
+              ./dist/wheels-windows-x86/*.whl
+              ./dist/wheels-linux-x86/*.whl
+              ./dist/wheels-linux-x86_64/*.whl
+              ./dist/wheels-macos-aarch64/*.whl
+              ./dist/wheels-macos-x86_64/*.whl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_prerelease.outputs.upload_url }}
-          asset_path: |
-            ./dist/wheels-musllinux-aarch64/*
-            ./dist/wheels-musllinux-armv7/*
-            ./dist/wheels-musllinux-x86/*
-            ./dist/wheels-musllinux-x86_64/*
-            ./dist/wheels-sdist/*
-            ./dist/wheels-windows-x64/*
-            ./dist/wheels-windows-x86/*
-            ./dist/wheels-linux-x86/*
-            ./dist/wheels-linux-x86_64/*
-            ./dist/wheels-macos-aarch64/*
-            ./dist/wheels-macos-x86_64/*
-          asset_name: wheels-*
-          asset_content_type: application/zip
       - name: Debug Upload URL
         if: steps.create_prerelease.outputs.upload_url == ''
         run: echo "Upload URL not set. Skipping upload."
