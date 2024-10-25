@@ -145,12 +145,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
-      - name: Build develop --extras test
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --develop --find-interpreter --features python --extras=test
-          sccache: 'true'
+#      - name: Build develop --extras test
+#        uses: PyO3/maturin-action@v1
+#        with:
+#          target: ${{ matrix.platform.target }}
+#          args: develop --find-interpreter --features python --extras=test
+#          sccache: 'true'
       - name: Build release wheels
         uses: PyO3/maturin-action@v1
         with:
