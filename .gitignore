@@ -21,3 +21,4 @@ Cargo.lock
 #.idea/
 tmp_py
 python_tests/__pycache__
+src/python_tests/__pycache__
