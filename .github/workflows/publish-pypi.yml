@@ -227,6 +227,8 @@ jobs:
           release_name: Pre-release ${{ github.ref }}
           draft: false
           prerelease: true
+      - name: List artifacts in dist
+        run: ls -R ./dist
       - name: Upload Release Asset
         if: steps.create_prerelease.outputs.upload_url != ''
         uses: actions/upload-release-asset@v1
@@ -234,7 +236,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_prerelease.outputs.upload_url }}
-          asset_path: ./dist/wheels-*/**/*.zip
+          asset_path: ./dist/wheels-*/**/*
           asset_name: wheels-*
           asset_content_type: application/zip
       - name: Debug Upload URL
