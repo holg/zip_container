@@ -234,8 +234,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_prerelease.outputs.upload_url }}
-          asset_path: ./dist/wheels-*
-          asset_name: wheels-*.zip
+          asset_path: ./dist/wheels-*/**/*.zip
+          asset_name: wheels-*
           asset_content_type: application/zip
       - name: Debug Upload URL
         if: steps.create_prerelease.outputs.upload_url == ''
