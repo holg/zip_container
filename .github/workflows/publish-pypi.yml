@@ -255,7 +255,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_prerelease.outputs.upload_url }}
-          asset_path: ./dist/wheels-*/**/*
+          asset_path: |
+            ./dist/wheels-musllinux-aarch64/*
+            ./dist/wheels-musllinux-armv7/*
+            ./dist/wheels-musllinux-x86/*
+            ./dist/wheels-musllinux-x86_64/*
+            ./dist/wheels-sdist/*
+            ./dist/wheels-windows-x64/*
+            ./dist/wheels-windows-x86/*
+            ./dist/wheels-linux-x86/*
+            ./dist/wheels-linux-x86_64/*
+            ./dist/wheels-macos-aarch64/*
+            ./dist/wheels-macos-x86_64/*
           asset_name: wheels-*
           asset_content_type: application/zip
       - name: Debug Upload URL
